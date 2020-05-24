@@ -1,2 +1,5 @@
 .idea
 *.iml
+/res/*.txt
+/target
+/out

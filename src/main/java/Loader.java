@@ -1,6 +1,8 @@
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -14,25 +16,25 @@ public class Loader {
                 e.printStackTrace();
             }
         }
-        if (!Files.exists(Paths.get("res/multi"))) {
-            try {
-                Files.createDirectories(Paths.get("res/multi"));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     public static void main(String[] args) throws InterruptedException {
 
-        ProducerConsumer pc = new ProducerConsumer();
+        Producer producer = new Producer();
+        Consumer consumer = new Consumer();
+
+        int queueLimit = 10;
+        int amountOfRegions = 10;
+        int amountOfThreads = Runtime.getRuntime().availableProcessors();
+
+        BlockingQueue<String> queue = new ArrayBlockingQueue<>(queueLimit);
 
         long start = System.currentTimeMillis();
 
-        ExecutorService executorService = Executors.newFixedThreadPool(10);
+        ExecutorService executorService = Executors.newFixedThreadPool(amountOfThreads);
         executorService.submit(new Thread(() -> {
             try {
-                pc.produce();
+                producer.produce(queue, amountOfRegions);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -41,16 +43,16 @@ public class Loader {
         executorService.shutdown();
 
 
-        Thread thread2 = new Thread(() -> {
+        Thread consumerThread = new Thread(() -> {
             try {
-                pc.consume();
+                consumer.consume(queue);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         });
 
-        thread2.start();
-        thread2.join();
+        consumerThread.start();
+        consumerThread.join();
 
         System.out.println("Время записи: " + (System.currentTimeMillis() - start) + " мс");
     }
